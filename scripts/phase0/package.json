@@ -1,0 +1,13 @@
+{
+  "name": "phase0-stt-comparison",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 tooling: call Whisper / Naver Clova Speech / Google Cloud STT on the same Korean sample and compare filler-word detection.",
+  "scripts": {
+    "compare": "node compare-stt.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

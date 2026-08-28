@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to ground-truth.json. Fill in by listening to the sample yourself and counting each filler word by ear. Used only to compute detection rate (detected / manual).",
+  "sampleFile": "../../samples/rehearsal-sample.wav",
+  "manualCounts": {
+    "음": 0,
+    "어": 0,
+    "그니까": 0,
+    "약간": 0,
+    "이제": 0,
+    "일단": 0
+  }
+}
