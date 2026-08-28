@@ -60,7 +60,10 @@ if (!existsSync(audioPath)) {
 }
 
 const fillerWords = JSON.parse(
-  await readFile(path.join(__dirname, "filler-words.json"), "utf8")
+  await readFile(
+    path.join(__dirname, "../../web/src/lib/filler-words.json"),
+    "utf8"
+  )
 );
 
 let groundTruth = null;

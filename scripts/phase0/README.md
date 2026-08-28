@@ -1,5 +1,8 @@
 # Phase 0 STT 비교 스크립트
 
+필러워드 사전은 `../../web/src/lib/filler-words.json`을 공용으로 사용한다
+(웹 앱과 이 스크립트가 같은 사전을 참조하도록 단일화).
+
 세 STT API(OpenAI Whisper, Naver Clova Speech, Google Cloud STT)에 같은
 한국어 샘플을 넣어 필러워드가 텍스트에 얼마나 남는지 비교한다.
 

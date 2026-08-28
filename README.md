@@ -6,36 +6,31 @@
 전체 제품 스펙은 작업 요청 원문(프로젝트 명세서)을 참고. 이 저장소는 명세서
 **2절: Phase 0 기술 검증**부터 순서대로 진행한다.
 
-## 현재 상태: Phase 0 (기술 검증) — 진행 중
+## 현재 상태
 
-> 명세서 지침: "본 개발에 들어가기 전, 반드시 아래를 먼저 확인한다. 이 단계를
-> 건너뛰고 바로 풀 개발에 들어가지 말 것."
-
-이 커밋에서는 Phase 0을 실행하는 데 필요한 **비교 스크립트와 문서 템플릿**을
-준비했다. 스크립트 자체는 실행 가능하지만, 실제 검증 결과를 얻으려면 아래 두
-가지가 필요하고 이 세션에는 없다:
-
-1. **샘플 녹음** — 필러워드가 다수 포함된 1~2분 분량의 한국어 리허설 음성
-   (`samples/` 아래에 두되, `.gitignore`로 제외되어 저장소에는 커밋되지 않음 —
-   음성 원본은 개인정보이므로 분석 후 즉시 삭제 권장)
-2. **API 자격 증명 3종** — OpenAI(Whisper), Naver Cloud Platform(Clova
-   Speech), Google Cloud(Speech-to-Text)
-
-이 두 가지가 준비되면 `scripts/phase0/README.md`의 안내대로 스크립트를 실행해
-`docs/phase0-stt-comparison.md`의 결과표를 채운다. 결과가 나오기 전까지는
-Next.js 앱 스캐폴딩(3단계 이후) 착수를 보류한다.
+- **Phase 0 (기술 검증) — 도구 준비 완료, 실제 검증은 대기 중.** 비교
+  스크립트는 실행 가능하지만, 실제 결과를 얻으려면 샘플 녹음과 3개 API 키가
+  필요하고 이 저장소를 만든 환경에는 없었다. 사용자가 로컬에서 직접 실행하기로
+  함 (`docs/phase0-stt-comparison.md` 참고).
+- **웹 앱 스캐폴딩 — MVP 화면 흐름 구현 완료.** Phase 0 결과를 기다리는 동안
+  Next.js 앱을 STT-프로바이더에 무관하게(`STT_PROVIDER=mock` 기본값) 먼저
+  구현해두었다. 녹음 → 분석 → 결과 → 히스토리 흐름을 로컬에서 브라우저로
+  직접 확인함 (`web/README.md`의 "알려진 제한" 참고 — 특히 히스토리 저장은
+  DB 미provisioning으로 인해 현재 `localStorage` 기반).
 
 ## 저장소 구조
 
 ```
-docs/phase0-stt-comparison.md   Phase 0 비교 결과 (현재는 방법론 + 대기 상태)
+docs/phase0-stt-comparison.md   Phase 0 비교 결과 (방법론 + 대기 상태)
 scripts/phase0/                 STT 3종 호출/비교 스크립트
 samples/                        (gitignored) 실제 테스트용 오디오를 넣는 위치
+web/                            Next.js 앱 (App Router + Tailwind CSS)
 ```
 
 ## 다음 단계
 
-- [ ] 샘플 녹음 + API 키 확보
-- [ ] `scripts/phase0/compare-stt.mjs` 실행, 결과를 `docs/phase0-stt-comparison.md`에 반영
-- [ ] 성공 기준(최소 1개 API 검출률 70% 이상) 충족 여부 확인 후 STT 최종 선정
-- [ ] 이후 명세서 7절 순서대로 Next.js 스캐폴딩 진행
+- [ ] Phase 0 실행 결과를 `docs/phase0-stt-comparison.md`에 반영, 성공 기준
+      충족 여부 확인 후 STT 최종 선정
+- [ ] `web/.env`에 `STT_PROVIDER`와 해당 API 키 설정
+- [ ] 히스토리 저장소를 Vercel Postgres 또는 Supabase로 교체 (`web/src/lib/history.ts`)
+- [ ] Vercel 배포
