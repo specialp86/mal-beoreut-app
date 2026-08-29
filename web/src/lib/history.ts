@@ -1,6 +1,7 @@
 "use client";
 
 import type { Recording } from "./types";
+import { deleteAudio } from "./audioStore";
 
 // NOTE: history is stored in the browser's localStorage for now. The spec
 // calls for Vercel Postgres/Supabase (see docs), but that requires a
@@ -37,6 +38,9 @@ export function addRecording(recording: Recording): void {
   const existing = getRecordings();
   const next = [recording, ...existing].slice(0, MAX_HISTORY);
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+
+  const dropped = existing.slice(MAX_HISTORY - 1);
+  for (const r of dropped) deleteAudio(r.id);
 }
 
 /** The recording immediately before `id` in time, for the comparison text. */

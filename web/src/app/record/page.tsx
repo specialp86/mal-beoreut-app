@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MAX_RECORDING_SECONDS, useRecorder } from "@/lib/useRecorder";
 import { addRecording } from "@/lib/history";
+import { saveAudio } from "@/lib/audioStore";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -27,12 +28,17 @@ export default function RecordPage() {
       try {
         const formData = new FormData();
         formData.append("audio", blob, "recording.webm");
-        const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData,
+          signal: AbortSignal.timeout(50_000),
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "분석에 실패했습니다.");
         if (cancelled) return;
 
         const id = crypto.randomUUID();
+        await saveAudio(id, blob);
         addRecording({
           id,
           createdAt: new Date().toISOString(),
@@ -46,7 +52,14 @@ export default function RecordPage() {
         router.push(`/result?id=${id}`);
       } catch (err) {
         if (!cancelled) {
-          setAnalyzeError(err instanceof Error ? err.message : "분석에 실패했습니다.");
+          const timedOut = err instanceof DOMException && err.name === "TimeoutError";
+          setAnalyzeError(
+            timedOut
+              ? "분석 시간이 너무 오래 걸려요. 더 짧게 녹음해서 다시 시도해주세요."
+              : err instanceof Error
+                ? err.message
+                : "분석에 실패했습니다."
+          );
           setAnalyzing(false);
         }
       }

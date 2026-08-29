@@ -41,6 +41,7 @@ export const googleProvider: SttProvider = {
           },
           audio: { content },
         }),
+        signal: AbortSignal.timeout(20_000),
       }
     );
     if (!res.ok) {

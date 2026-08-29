@@ -4,7 +4,7 @@ import { getSttProvider } from "@/lib/stt";
 import { generateCoachingTip } from "@/lib/coach";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 export async function POST(request: Request) {
   const formData = await request.formData();

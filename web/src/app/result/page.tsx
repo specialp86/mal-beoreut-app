@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { getPreviousRecording, getRecording } from "@/lib/history";
 import type { Recording } from "@/lib/types";
 import { BarChart } from "@/components/BarChart";
+import { AudioPlayback } from "@/components/AudioPlayback";
 
 function ComparisonNote({ current, previous }: { current: Recording; previous?: Recording }) {
   if (!previous) {
@@ -83,6 +84,8 @@ function ResultContent() {
           <ComparisonNote current={recording} previous={previous} />
         </div>
       </section>
+
+      <AudioPlayback id={recording.id} />
 
       <section>
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
