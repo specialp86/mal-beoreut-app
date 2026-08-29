@@ -9,4 +9,5 @@ export interface Recording {
   totalFillerCount: number;
   sttProvider: string;
   coachingTip?: string | null;
+  syllablesPerMinute: number;
 }

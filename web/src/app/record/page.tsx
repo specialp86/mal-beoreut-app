@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { MAX_RECORDING_SECONDS, useRecorder } from "@/lib/useRecorder";
 import { addRecording } from "@/lib/history";
 import { saveAudio } from "@/lib/audioStore";
+import { calculateSyllablesPerMinute } from "@/lib/speed";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -48,6 +49,7 @@ export default function RecordPage() {
           totalFillerCount: data.totalFillerCount,
           sttProvider: data.sttProvider,
           coachingTip: data.coachingTip ?? null,
+          syllablesPerMinute: calculateSyllablesPerMinute(data.transcriptText, elapsedSeconds),
         });
         router.push(`/result?id=${id}`);
       } catch (err) {

@@ -7,6 +7,7 @@ import { getPreviousRecording, getRecording } from "@/lib/history";
 import type { Recording } from "@/lib/types";
 import { BarChart } from "@/components/BarChart";
 import { AudioPlayback } from "@/components/AudioPlayback";
+import { speedLabel } from "@/lib/speed";
 
 function ComparisonNote({ current, previous }: { current: Recording; previous?: Recording }) {
   if (!previous) {
@@ -84,6 +85,21 @@ function ResultContent() {
           <ComparisonNote current={recording} previous={previous} />
         </div>
       </section>
+
+      {recording.syllablesPerMinute > 0 && (
+        <section className="flex items-center justify-center gap-2 text-sm">
+          <span style={{ color: "var(--text-secondary)" }}>말하기 속도</span>
+          <span className="font-semibold tabular-nums">
+            {recording.syllablesPerMinute}음절/분
+          </span>
+          <span
+            className="text-xs font-semibold rounded-full px-2 py-0.5"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            {speedLabel(recording.syllablesPerMinute)}
+          </span>
+        </section>
+      )}
 
       <AudioPlayback id={recording.id} />
 

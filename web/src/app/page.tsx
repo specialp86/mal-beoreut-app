@@ -49,12 +49,13 @@ export default function HomePage() {
       </Link>
 
       {stats && stats.totalRecordings > 0 && (
-        <section className="w-full flex gap-3">
+        <section className="w-full grid grid-cols-2 gap-3">
           <StatTile label="누적 녹음" value={`${stats.totalRecordings}회`} />
           <StatTile label="평균 필러워드" value={`${stats.averageFillerCount}개`} />
+          <StatTile label="최다 습관어" value={stats.topWord ? `${stats.topWord.word}` : "-"} />
           <StatTile
-            label="최다 습관어"
-            value={stats.topWord ? `${stats.topWord.word}` : "-"}
+            label="평균 말하기 속도"
+            value={stats.averageSyllablesPerMinute ? `${stats.averageSyllablesPerMinute}음절/분` : "-"}
           />
         </section>
       )}

@@ -47,12 +47,13 @@ export interface StatsSummary {
   totalRecordings: number;
   averageFillerCount: number;
   topWord: { word: string; count: number } | null;
+  averageSyllablesPerMinute: number | null;
 }
 
 export function getStatsSummary(): StatsSummary {
   const all = getRecordings();
   if (all.length === 0) {
-    return { totalRecordings: 0, averageFillerCount: 0, topWord: null };
+    return { totalRecordings: 0, averageFillerCount: 0, topWord: null, averageSyllablesPerMinute: null };
   }
 
   const totalFillerCount = all.reduce((sum, r) => sum + r.totalFillerCount, 0);
@@ -67,7 +68,14 @@ export function getStatsSummary(): StatsSummary {
   const topEntry = Object.entries(wordTotals).sort((a, b) => b[1] - a[1])[0];
   const topWord = topEntry && topEntry[1] > 0 ? { word: topEntry[0], count: topEntry[1] } : null;
 
-  return { totalRecordings: all.length, averageFillerCount, topWord };
+  // Older recordings predate this field, so only average over ones that have it.
+  const withSpeed = all.filter((r) => r.syllablesPerMinute > 0);
+  const averageSyllablesPerMinute =
+    withSpeed.length > 0
+      ? Math.round(withSpeed.reduce((sum, r) => sum + r.syllablesPerMinute, 0) / withSpeed.length)
+      : null;
+
+  return { totalRecordings: all.length, averageFillerCount, topWord, averageSyllablesPerMinute };
 }
 
 /** The recording immediately before `id` in time, for the comparison text. */
