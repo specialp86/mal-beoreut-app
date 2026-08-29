@@ -6,6 +6,7 @@ import { MAX_RECORDING_SECONDS, useRecorder } from "@/lib/useRecorder";
 import { addRecording } from "@/lib/history";
 import { saveAudio } from "@/lib/audioStore";
 import { calculateSyllablesPerMinute } from "@/lib/speed";
+import { getKnownExpressions, mergeHabitsIntoProfile } from "@/lib/habitProfile";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -29,6 +30,7 @@ export default function RecordPage() {
       try {
         const formData = new FormData();
         formData.append("audio", blob, "recording.webm");
+        formData.append("knownExpressions", JSON.stringify(getKnownExpressions()));
         const res = await fetch("/api/transcribe", {
           method: "POST",
           body: formData,
@@ -39,16 +41,18 @@ export default function RecordPage() {
         if (cancelled) return;
 
         const id = crypto.randomUUID();
+        const createdAt = new Date().toISOString();
         await saveAudio(id, blob);
+        mergeHabitsIntoProfile(data.detectedHabits, createdAt);
         addRecording({
           id,
-          createdAt: new Date().toISOString(),
+          createdAt,
           durationSeconds: elapsedSeconds,
           transcriptText: data.transcriptText,
-          fillerCounts: data.fillerCounts,
-          totalFillerCount: data.totalFillerCount,
           sttProvider: data.sttProvider,
-          coachingTip: data.coachingTip ?? null,
+          detectedHabits: data.detectedHabits,
+          totalHabitMentions: data.totalHabitMentions,
+          habitSummary: data.habitSummary ?? null,
           syllablesPerMinute: calculateSyllablesPerMinute(data.transcriptText, elapsedSeconds),
         });
         router.push(`/result?id=${id}`);

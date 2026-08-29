@@ -17,11 +17,12 @@ function ComparisonNote({ current, previous }: { current: Recording; previous?: 
       </p>
     );
   }
-  if (previous.totalFillerCount === 0) {
+  const prevTotal = previous.totalHabitMentions ?? 0;
+  if (prevTotal === 0) {
     return null;
   }
-  const diff = previous.totalFillerCount - current.totalFillerCount;
-  const percent = Math.round((Math.abs(diff) / previous.totalFillerCount) * 100);
+  const diff = prevTotal - current.totalHabitMentions;
+  const percent = Math.round((Math.abs(diff) / prevTotal) * 100);
   const improved = diff > 0;
   const unchanged = diff === 0;
 
@@ -31,7 +32,7 @@ function ComparisonNote({ current, previous }: { current: Recording; previous?: 
       style={{ color: unchanged ? "var(--text-secondary)" : improved ? "var(--good)" : "var(--serious)" }}
     >
       {unchanged
-        ? "지난번과 필러워드 개수가 같아요."
+        ? "지난번과 습관 언급 횟수가 같아요."
         : improved
           ? `지난번보다 ${percent}% 줄었어요 👍`
           : `지난번보다 ${percent}% 늘었어요`}
@@ -68,18 +69,20 @@ function ResultContent() {
     );
   }
 
+  const habits = recording.detectedHabits ?? [];
+  const habitCounts = Object.fromEntries(habits.map((h) => [h.expression, h.count]));
   const minutes = Math.max(recording.durationSeconds / 60, 1 / 60);
-  const perMinute = Math.round((recording.totalFillerCount / minutes) * 10) / 10;
+  const perMinute = Math.round(((recording.totalHabitMentions ?? 0) / minutes) * 10) / 10;
 
   return (
     <main className="flex-1 flex flex-col gap-8 px-6 py-12 max-w-xl mx-auto w-full">
       <section className="text-center">
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          전체 필러워드 개수
+          이번 녹음에서 발견된 습관 언급
         </p>
-        <p className="text-5xl font-semibold mt-1">{recording.totalFillerCount}개</p>
+        <p className="text-5xl font-semibold mt-1">{recording.totalHabitMentions ?? 0}회</p>
         <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-          분당 {perMinute}개
+          분당 {perMinute}회
         </p>
         <div className="mt-3">
           <ComparisonNote current={recording} previous={previous} />
@@ -105,20 +108,39 @@ function ResultContent() {
 
       <section>
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
-          단어별 빈도
+          이번 녹음에서 발견된 습관
         </h2>
-        <BarChart counts={recording.fillerCounts} />
+        {habits.length > 0 ? (
+          <>
+            <BarChart counts={habitCounts} />
+            <ul className="mt-3 flex flex-col gap-1">
+              {habits.map((h) => (
+                <li key={h.expression} className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  <span className="font-medium" style={{ color: "var(--text-secondary)" }}>
+                    {h.expression}
+                  </span>
+                  {" · "}
+                  {h.category} · &ldquo;{h.example}&rdquo;
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            이번 녹음에서는 뚜렷한 습관이 발견되지 않았어요.
+          </p>
+        )}
       </section>
 
-      {recording.coachingTip && (
+      {recording.habitSummary && (
         <section
           className="rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
           style={{ background: "var(--series-1-soft)", color: "var(--foreground)" }}
         >
           <p className="text-xs font-semibold mb-1" style={{ color: "var(--series-1)" }}>
-            개선 팁
+            AI 분석
           </p>
-          {recording.coachingTip}
+          {recording.habitSummary}
         </section>
       )}
 

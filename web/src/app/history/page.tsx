@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getRecordings } from "@/lib/history";
+import { getHabitProfile, type ProfileHabit } from "@/lib/habitProfile";
 import type { Recording } from "@/lib/types";
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
+import { BarChart } from "@/components/BarChart";
 
 export default function HistoryPage() {
   const [records, setRecords] = useState<Recording[]>([]);
+  const [profile, setProfile] = useState<ProfileHabit[]>([]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecords(getRecordings());
+    setProfile(getHabitProfile());
   }, []);
 
   const chronological = records
@@ -24,12 +28,14 @@ export default function HistoryPage() {
       month: "numeric",
       day: "numeric",
     }),
-    value: r.totalFillerCount,
+    value: r.totalHabitMentions ?? 0,
   }));
 
   const byDateDesc = records
     .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const profileCounts = Object.fromEntries(profile.map((h) => [h.expression, h.occurrences]));
 
   return (
     <main className="flex-1 flex flex-col gap-8 px-6 py-12 max-w-xl mx-auto w-full">
@@ -42,7 +48,20 @@ export default function HistoryPage() {
 
       <section>
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
-          회차별 필러워드 총 개수 추이
+          내가 가진 말하기 습관 (누적)
+        </h2>
+        {profile.length > 0 ? (
+          <BarChart counts={profileCounts} />
+        ) : (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            아직 발견된 습관이 없습니다.
+          </p>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
+          회차별 습관 언급 횟수 추이
         </h2>
         <TrendChart points={trendPoints} />
       </section>
@@ -77,7 +96,7 @@ export default function HistoryPage() {
                     className="text-xs font-semibold rounded-full px-2.5 py-1 text-white"
                     style={{ background: "var(--series-1)" }}
                   >
-                    필러워드 {r.totalFillerCount}개
+                    습관 언급 {r.totalHabitMentions ?? 0}회
                   </span>
                 </Link>
               </li>

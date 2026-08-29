@@ -2,6 +2,7 @@
 
 import type { Recording } from "./types";
 import { deleteAudio } from "./audioStore";
+import { getHabitProfile } from "./habitProfile";
 
 // NOTE: history is stored in the browser's localStorage for now. The spec
 // calls for Vercel Postgres/Supabase (see docs), but that requires a
@@ -45,37 +46,33 @@ export function addRecording(recording: Recording): void {
 
 export interface StatsSummary {
   totalRecordings: number;
-  averageFillerCount: number;
-  topWord: { word: string; count: number } | null;
+  averageHabitMentions: number;
+  topHabit: { expression: string; occurrences: number } | null;
   averageSyllablesPerMinute: number | null;
 }
 
 export function getStatsSummary(): StatsSummary {
   const all = getRecordings();
   if (all.length === 0) {
-    return { totalRecordings: 0, averageFillerCount: 0, topWord: null, averageSyllablesPerMinute: null };
+    return { totalRecordings: 0, averageHabitMentions: 0, topHabit: null, averageSyllablesPerMinute: null };
   }
 
-  const totalFillerCount = all.reduce((sum, r) => sum + r.totalFillerCount, 0);
-  const averageFillerCount = Math.round((totalFillerCount / all.length) * 10) / 10;
+  // Older recordings predate these fields, so guard with `?? 0` / `?? []`.
+  const totalMentions = all.reduce((sum, r) => sum + (r.totalHabitMentions ?? 0), 0);
+  const averageHabitMentions = Math.round((totalMentions / all.length) * 10) / 10;
 
-  const wordTotals: Record<string, number> = {};
-  for (const r of all) {
-    for (const [word, count] of Object.entries(r.fillerCounts)) {
-      wordTotals[word] = (wordTotals[word] ?? 0) + count;
-    }
-  }
-  const topEntry = Object.entries(wordTotals).sort((a, b) => b[1] - a[1])[0];
-  const topWord = topEntry && topEntry[1] > 0 ? { word: topEntry[0], count: topEntry[1] } : null;
+  const topProfileHabit = getHabitProfile()[0];
+  const topHabit = topProfileHabit
+    ? { expression: topProfileHabit.expression, occurrences: topProfileHabit.occurrences }
+    : null;
 
-  // Older recordings predate this field, so only average over ones that have it.
   const withSpeed = all.filter((r) => r.syllablesPerMinute > 0);
   const averageSyllablesPerMinute =
     withSpeed.length > 0
       ? Math.round(withSpeed.reduce((sum, r) => sum + r.syllablesPerMinute, 0) / withSpeed.length)
       : null;
 
-  return { totalRecordings: all.length, averageFillerCount, topWord, averageSyllablesPerMinute };
+  return { totalRecordings: all.length, averageHabitMentions, topHabit, averageSyllablesPerMinute };
 }
 
 /** The recording immediately before `id` in time, for the comparison text. */

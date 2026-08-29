@@ -1,10 +1,9 @@
-import type { FillerCounts } from "@/lib/filler-words";
-
 interface BarChartProps {
-  counts: FillerCounts;
+  counts: Record<string, number>;
+  emptyMessage?: string;
 }
 
-export function BarChart({ counts }: BarChartProps) {
+export function BarChart({ counts, emptyMessage = "표시할 항목이 없습니다." }: BarChartProps) {
   const rows = Object.entries(counts)
     .filter(([, count]) => count > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -12,7 +11,7 @@ export function BarChart({ counts }: BarChartProps) {
   if (rows.length === 0) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-        검출된 필러워드가 없습니다.
+        {emptyMessage}
       </p>
     );
   }
@@ -20,14 +19,14 @@ export function BarChart({ counts }: BarChartProps) {
   const max = rows[0][1];
 
   return (
-    <div className="flex flex-col gap-3" role="img" aria-label="단어별 필러워드 빈도">
-      {rows.map(([word, count], i) => (
-        <div key={word} className="flex items-center gap-3">
+    <div className="flex flex-col gap-3" role="img" aria-label="항목별 빈도">
+      {rows.map(([label, count], i) => (
+        <div key={label} className="flex items-center gap-3">
           <span
-            className={`w-20 shrink-0 text-sm text-right ${i === 0 ? "font-semibold" : ""}`}
+            className={`w-28 shrink-0 text-sm text-right ${i === 0 ? "font-semibold" : ""}`}
             style={{ color: "var(--foreground)" }}
           >
-            {word}
+            {label}
             {i === 0 && (
               <span className="ml-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 최다

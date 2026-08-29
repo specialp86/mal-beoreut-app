@@ -36,7 +36,7 @@ export default function HomePage() {
       <div className="text-center">
         <h1 className="text-2xl font-semibold">음어탐지기</h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-          발표 리허설을 녹음하면 “음”, “어”, “그니까” 같은 습관어 사용 빈도를 분석해드려요.
+          발표를 녹음하면 AI가 당신만의 말하기 습관을 찾아서 쌓아드려요.
         </p>
       </div>
 
@@ -51,8 +51,8 @@ export default function HomePage() {
       {stats && stats.totalRecordings > 0 && (
         <section className="w-full grid grid-cols-2 gap-3">
           <StatTile label="누적 녹음" value={`${stats.totalRecordings}회`} />
-          <StatTile label="평균 필러워드" value={`${stats.averageFillerCount}개`} />
-          <StatTile label="최다 습관어" value={stats.topWord ? `${stats.topWord.word}` : "-"} />
+          <StatTile label="평균 습관 언급" value={`${stats.averageHabitMentions}회`} />
+          <StatTile label="최다 습관" value={stats.topHabit ? `${stats.topHabit.expression}` : "-"} />
           <StatTile
             label="평균 말하기 속도"
             value={stats.averageSyllablesPerMinute ? `${stats.averageSyllablesPerMinute}음절/분` : "-"}
@@ -89,7 +89,7 @@ export default function HomePage() {
                     className="text-xs font-semibold rounded-full px-2.5 py-1 text-white"
                     style={{ background: "var(--series-1)" }}
                   >
-                    필러워드 {r.totalFillerCount}개
+                    습관 언급 {r.totalHabitMentions ?? 0}회
                   </span>
                 </Link>
               </li>
