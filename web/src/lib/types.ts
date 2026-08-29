@@ -1,15 +1,14 @@
 import type { DetectedHabit } from "./habitAnalysis";
 
+/** Shape of a row in the `recordings` table (snake_case, matches the DB). */
 export interface Recording {
   id: string;
-  createdAt: string; // ISO timestamp
-  durationSeconds: number;
-  transcriptText: string;
-  sttProvider: string;
-  syllablesPerMinute: number;
-  /** This recording's freely-detected habits (not a fixed dictionary). */
-  detectedHabits: DetectedHabit[];
-  totalHabitMentions: number;
-  /** AI-written overview + practice suggestion; null if ANTHROPIC_API_KEY isn't set. */
-  habitSummary: string | null;
+  created_at: string;
+  duration_seconds: number;
+  transcript_text: string;
+  stt_provider: string;
+  syllables_per_minute: number;
+  total_habit_mentions: number;
+  habit_summary: string | null;
+  detected_habits: DetectedHabit[];
 }

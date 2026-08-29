@@ -3,10 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MAX_RECORDING_SECONDS, useRecorder } from "@/lib/useRecorder";
-import { addRecording } from "@/lib/history";
 import { saveAudio } from "@/lib/audioStore";
-import { calculateSyllablesPerMinute } from "@/lib/speed";
-import { getKnownExpressions, mergeHabitsIntoProfile } from "@/lib/habitProfile";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -30,7 +27,7 @@ export default function RecordPage() {
       try {
         const formData = new FormData();
         formData.append("audio", blob, "recording.webm");
-        formData.append("knownExpressions", JSON.stringify(getKnownExpressions()));
+        formData.append("durationSeconds", String(elapsedSeconds));
         const res = await fetch("/api/transcribe", {
           method: "POST",
           body: formData,
@@ -40,22 +37,10 @@ export default function RecordPage() {
         if (!res.ok) throw new Error(data.error || "분석에 실패했습니다.");
         if (cancelled) return;
 
-        const id = crypto.randomUUID();
-        const createdAt = new Date().toISOString();
-        await saveAudio(id, blob);
-        mergeHabitsIntoProfile(data.detectedHabits, createdAt);
-        addRecording({
-          id,
-          createdAt,
-          durationSeconds: elapsedSeconds,
-          transcriptText: data.transcriptText,
-          sttProvider: data.sttProvider,
-          detectedHabits: data.detectedHabits,
-          totalHabitMentions: data.totalHabitMentions,
-          habitSummary: data.habitSummary ?? null,
-          syllablesPerMinute: calculateSyllablesPerMinute(data.transcriptText, elapsedSeconds),
-        });
-        router.push(`/result?id=${id}`);
+        // Audio stays device-local (IndexedDB) for now — playback only works
+        // on the device that recorded it until this moves to cloud storage.
+        await saveAudio(data.id, blob);
+        router.push(`/result/${data.id}`);
       } catch (err) {
         if (!cancelled) {
           const timedOut = err instanceof DOMException && err.name === "TimeoutError";

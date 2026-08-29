@@ -1,41 +1,35 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getRecordings } from "@/lib/history";
-import { getHabitProfile, type ProfileHabit } from "@/lib/habitProfile";
-import type { Recording } from "@/lib/types";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { BarChart } from "@/components/BarChart";
 
-export default function HistoryPage() {
-  const [records, setRecords] = useState<Recording[]>([]);
-  const [profile, setProfile] = useState<ProfileHabit[]>([]);
+export default async function HistoryPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRecords(getRecordings());
-    setProfile(getHabitProfile());
-  }, []);
+  const [{ data: byDateDesc }, { data: profile }] = await Promise.all([
+    supabase
+      .from("recordings")
+      .select("id, created_at, total_habit_mentions")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("habit_profile")
+      .select("expression, occurrences")
+      .order("occurrences", { ascending: false }),
+  ]);
 
-  const chronological = records
-    .slice()
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-
+  const chronological = (byDateDesc ?? []).slice().reverse();
   const trendPoints: TrendPoint[] = chronological.map((r) => ({
     id: r.id,
-    label: new Date(r.createdAt).toLocaleDateString("ko-KR", {
-      month: "numeric",
-      day: "numeric",
-    }),
-    value: r.totalHabitMentions ?? 0,
+    label: new Date(r.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }),
+    value: r.total_habit_mentions ?? 0,
   }));
 
-  const byDateDesc = records
-    .slice()
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  const profileCounts = Object.fromEntries(profile.map((h) => [h.expression, h.occurrences]));
+  const profileCounts = Object.fromEntries((profile ?? []).map((h) => [h.expression, h.occurrences]));
 
   return (
     <main className="flex-1 flex flex-col gap-8 px-6 py-12 max-w-xl mx-auto w-full">
@@ -50,7 +44,7 @@ export default function HistoryPage() {
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
           내가 가진 말하기 습관 (누적)
         </h2>
-        {profile.length > 0 ? (
+        {profile && profile.length > 0 ? (
           <BarChart counts={profileCounts} />
         ) : (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -70,7 +64,7 @@ export default function HistoryPage() {
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
           날짜별 기록
         </h2>
-        {byDateDesc.length === 0 ? (
+        {!byDateDesc || byDateDesc.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             아직 녹음 기록이 없습니다.
           </p>
@@ -79,12 +73,12 @@ export default function HistoryPage() {
             {byDateDesc.map((r) => (
               <li key={r.id}>
                 <Link
-                  href={`/result?id=${r.id}`}
+                  href={`/result/${r.id}`}
                   className="flex items-center justify-between rounded-lg px-4 py-3"
                   style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <span className="text-sm">
-                    {new Date(r.createdAt).toLocaleString("ko-KR", {
+                    {new Date(r.created_at).toLocaleString("ko-KR", {
                       year: "numeric",
                       month: "long",
                       day: "numeric",
@@ -96,7 +90,7 @@ export default function HistoryPage() {
                     className="text-xs font-semibold rounded-full px-2.5 py-1 text-white"
                     style={{ background: "var(--series-1)" }}
                   >
-                    습관 언급 {r.totalHabitMentions ?? 0}회
+                    습관 언급 {r.total_habit_mentions ?? 0}회
                   </span>
                 </Link>
               </li>

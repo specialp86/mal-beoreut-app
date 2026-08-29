@@ -1,9 +1,8 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getRecordings, getStatsSummary, type StatsSummary } from "@/lib/history";
-import type { Recording } from "@/lib/types";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { computeStatsSummary } from "@/lib/stats";
+import { LogoutButton } from "@/components/LogoutButton";
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
@@ -19,17 +18,28 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function HomePage() {
-  const [recent, setRecent] = useState<Recording[]>([]);
-  const [stats, setStats] = useState<StatsSummary | null>(null);
+export default async function HomePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  useEffect(() => {
-    // Reads from localStorage, which only exists on the client — this is
-    // exactly the "external system" case set-state-in-effect exists for.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRecent(getRecordings().slice(0, 5));
-    setStats(getStatsSummary());
-  }, []);
+  const [{ data: recent }, { data: allForStats }, { data: topHabitRows }] = await Promise.all([
+    supabase
+      .from("recordings")
+      .select("id, created_at, total_habit_mentions")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase.from("recordings").select("total_habit_mentions, syllables_per_minute"),
+    supabase
+      .from("habit_profile")
+      .select("expression, occurrences")
+      .order("occurrences", { ascending: false })
+      .limit(1),
+  ]);
+
+  const stats = computeStatsSummary(allForStats ?? [], topHabitRows?.[0] ?? null);
 
   return (
     <main className="flex-1 flex flex-col items-center gap-10 px-6 py-16 max-w-xl mx-auto w-full">
@@ -48,7 +58,7 @@ export default function HomePage() {
         녹음 시작
       </Link>
 
-      {stats && stats.totalRecordings > 0 && (
+      {stats.totalRecordings > 0 && (
         <section className="w-full grid grid-cols-2 gap-3">
           <StatTile label="누적 녹음" value={`${stats.totalRecordings}회`} />
           <StatTile label="평균 습관 언급" value={`${stats.averageHabitMentions}회`} />
@@ -64,7 +74,7 @@ export default function HomePage() {
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
           최근 녹음
         </h2>
-        {recent.length === 0 ? (
+        {!recent || recent.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             아직 녹음 기록이 없습니다.
           </p>
@@ -73,12 +83,12 @@ export default function HomePage() {
             {recent.map((r) => (
               <li key={r.id}>
                 <Link
-                  href={`/result?id=${r.id}`}
+                  href={`/result/${r.id}`}
                   className="flex items-center justify-between rounded-lg px-4 py-3"
                   style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <span className="text-sm">
-                    {new Date(r.createdAt).toLocaleString("ko-KR", {
+                    {new Date(r.created_at).toLocaleString("ko-KR", {
                       month: "long",
                       day: "numeric",
                       hour: "2-digit",
@@ -89,14 +99,14 @@ export default function HomePage() {
                     className="text-xs font-semibold rounded-full px-2.5 py-1 text-white"
                     style={{ background: "var(--series-1)" }}
                   >
-                    습관 언급 {r.totalHabitMentions ?? 0}회
+                    습관 언급 {r.total_habit_mentions ?? 0}회
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
         )}
-        {recent.length > 0 && (
+        {recent && recent.length > 0 && (
           <Link
             href="/history"
             className="mt-3 inline-block text-sm underline"
@@ -106,6 +116,8 @@ export default function HomePage() {
           </Link>
         )}
       </section>
+
+      <LogoutButton />
     </main>
   );
 }

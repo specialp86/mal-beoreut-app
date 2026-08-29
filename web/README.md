@@ -1,36 +1,47 @@
 # 음어탐지기 — 웹 앱
 
-Next.js (App Router) + Tailwind CSS. 저장소 전체 개요는 리포 루트 README 참고.
+Next.js (App Router) + Tailwind CSS + Supabase(로그인 + DB). 저장소 전체 개요는
+리포 루트 README 참고.
 
 ## 개발 서버 실행
 
 ```bash
 npm install
-cp .env.example .env   # STT 키 + ANTHROPIC_API_KEY 채우기 (없으면 mock으로 동작 / 습관 분석은 비활성)
+cp .env.example .env
+# 최소 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / ANTHROPIC_API_KEY 채우기
+# 1) supabase/schema.sql을 Supabase 대시보드의 SQL Editor에서 실행 (테이블 + RLS + 누적 병합 함수 생성)
 npm run dev
 ```
 
-## 현재 구현 범위 (v2 — AI 기반 습관 발견으로 전환)
+## 현재 구현 범위 (v3 — 로그인 기반 개인별 누적)
 
-**핵심 방식이 바뀌었다.** v1은 고정된 필러워드 사전("음", "어", "그니까" 등)으로
-문자열을 카운트하는 방식이었는데, 미리 정해둔 단어에만 반응하고 사람마다 다른
-말버릇은 못 잡는다는 한계가 있었다. 지금은 **Claude API가 발화 전체를 읽고
-자유롭게 반복 패턴(간투사, 접속어 남용, 특정 어미 반복, 문장 시작 패턴 등)을
-찾아내고, 그 결과를 기기에 누적**해서 "이 사람의 말버릇"을 점점 더 정확하게
-그려나가는 방식이다 (`src/lib/habitAnalysis.ts`, `src/lib/habitProfile.ts`).
+**저장 위치가 바뀌었다.** v2까지는 습관 데이터를 브라우저 `localStorage`에
+저장했는데, 이러면 "이 기기의 이 브라우저"에만 데이터가 남고 다른 기기로
+로그인해도 이어지지 않는다는 한계가 있었다. 지금은 **Supabase 로그인(이메일
+매직링크) + Postgres DB**로 옮겨서, 어떤 기기에서 로그인하든 같은 습관 데이터를
+본다.
 
+- **로그인**: `/login`에서 이메일 입력 → 매직 링크 클릭 → `/auth/callback`에서
+  세션 교환. 비로그인 상태로 앱 화면에 접근하면 미들웨어(`middleware.ts`,
+  `src/lib/supabase/middleware.ts`)가 `/login`으로 돌려보낸다.
 - 브라우저 마이크 녹음 (`MediaRecorder`, 1~5분, `src/lib/useRecorder.ts`)
 - 녹음 → STT(`/api/transcribe`) → **Claude가 습관 자유 탐지 + 요약/조언 생성**
-  (`src/lib/habitAnalysis.ts`, structured output, `zod` 스키마로 검증)
-- 이번 녹음에서 발견된 습관은 기존 누적 프로필과 **표현(expression) 단위로 병합**
-  — 같은 습관이 다시 나오면 발생 횟수가 쌓이고, 새 패턴이면 새 항목으로 추가
-  (`src/lib/habitProfile.ts`, `localStorage` 저장)
-- 결과 화면: 이번 녹음의 습관 막대그래프 + 예문, AI 요약/조언, 지난 녹음 대비
-  증감 비교, 말하기 속도(음절/분)
-- 히스토리 화면: **누적 습관 프로필**(전체 기간 통틀어 어떤 습관을 얼마나
-  가졌는지) + 회차별 습관 언급 횟수 추이 그래프
-- 녹음 원본을 브라우저 IndexedDB에 저장해 결과 화면에서 다시 들어볼 수 있음
-  (`src/lib/audioStore.ts`) — 기기 로컬 저장이며 서버로는 전송되지 않음
+  (`src/lib/habitAnalysis.ts`, structured output, `zod` 스키마로 검증) →
+  **서버에서 Supabase에 저장** (더 이상 클라이언트가 직접 쓰지 않음)
+- 새로 발견된 습관은 Postgres 함수 `merge_habit_profile`(`supabase/schema.sql`)
+  로 기존 누적 프로필과 **표현(expression) 단위로 원자적으로 병합** — 같은
+  습관이 다시 나오면 발생 횟수가 쌓이고, 새 패턴이면 새 행으로 추가됨
+- 결과 화면(`/result/[id]`, 서버 컴포넌트): 이번 녹음의 습관 막대그래프 +
+  예문, AI 요약/조언, 지난 녹음 대비 증감 비교, 말하기 속도(음절/분)
+- 히스토리 화면(`/history`, 서버 컴포넌트): **누적 습관 프로필** + 회차별
+  습관 언급 횟수 추이 그래프
+- 홈 화면(`/`, 서버 컴포넌트): 통계 요약 + 최근 5개 + 로그아웃
+
+## DB 스키마
+
+`supabase/schema.sql` 참고 — `recordings`(녹음별 결과), `habit_profile`(사용자별
+누적 습관), 둘 다 Row Level Security로 본인 행만 접근 가능. `merge_habit_profile`
+함수가 누적 로직(INSERT ... ON CONFLICT ... DO UPDATE)을 담당.
 
 ## STT 연동
 
@@ -41,28 +52,24 @@ npm run dev
 
 ## AI 습관 분석 (핵심 기능, `ANTHROPIC_API_KEY` 필요)
 
-v1의 코칭 팁과 달리 이제 이건 **선택 기능이 아니라 핵심 기능**이다.
-`ANTHROPIC_API_KEY`가 없으면 `/api/transcribe`가 424 에러를 반환하고 화면에
-안내 메시지가 뜬다 — STT는 성공해도 분석 자체가 안 되는 게 맞는 동작이다.
-비용은 Claude Haiku 기준 녹음 1건당 매우 낮음(1원 안팎, 자세한 계산은 대화
-기록 참고).
+선택 기능이 아니라 핵심 기능이다. `ANTHROPIC_API_KEY`가 없으면
+`/api/transcribe`가 424 에러를 반환하고 화면에 안내 메시지가 뜬다. 비용은
+Claude Haiku 기준 녹음 1건당 매우 낮음(1원 안팎).
 
 ## 알려진 제한 / 다음 단계
 
+- **녹음 원본(오디오)은 아직 기기 로컬(IndexedDB)에만 저장된다.** 습관
+  데이터·요약은 로그인 계정에 묶여 기기 간 동기화되지만, 실제 음성 재생은
+  녹음한 그 기기·브라우저에서만 가능하다. 오디오까지 동기화하려면 Supabase
+  Storage로 옮기는 작업이 추가로 필요함 (다음 단계 후보).
 - **습관 매칭이 정확 문자열 일치다.** AI가 같은 습관을 다시 발견했을 때 이전과
   똑같은 `expression` 문구를 쓰도록 프롬프트로 유도하고 있지만(이전에 발견된
-  습관 목록을 프롬프트에 같이 넣어줌), 완벽하지는 않다 — 표현이 조금 다르게
-  나오면 같은 습관인데 별개 항목으로 쌓일 수 있음.
-- **원본 오디오를 기기에 보관한다.** 스펙의 원래 권장(개인정보 최소화를 위해
-  처리 즉시 오디오 삭제)에서 벗어난 부분 — 다시 들어볼 수 있게 해달라는 요청에
-  따라 IndexedDB에 저장하도록 바꿨다. 서버로는 여전히 전송되지 않고 브라우저
-  안에만 남는다.
-- **히스토리·습관 프로필 저장이 `localStorage` 기반이다.** 스펙은 Vercel
-  Postgres 또는 Supabase를 제안하지만, 이 저장소를 만든 환경에는 DB가
-  provisioning되어 있지 않아 실제 연결을 확인할 수 없었다. `src/lib/history.ts`,
-  `src/lib/habitProfile.ts`의 함수 시그니처만 유지하면 DB 연동으로 교체 가능.
+  습관 목록을 프롬프트에 같이 넣어줌), 완벽하지는 않다.
 - STT 3종 중 실제로 검증된 것은 Google뿐이다(Phase 0 결과 대기 중) — `mock`이
   기본값인 이유.
 - `src/lib/filler-words.ts`(고정 사전)는 앱 자체의 습관 판별에는 더 이상
   쓰이지 않고, (1) Whisper STT 프롬프트에 필러워드 유지를 유도하는 힌트, (2)
   `scripts/phase0`의 STT 비교 스크립트에서만 계속 사용된다.
+- Supabase 이메일 로그인은 기본적으로 Supabase의 무료 이메일 발송 한도를
+  쓴다 — 사용자가 늘면 커스텀 SMTP 설정이 필요할 수 있음(Supabase 대시보드
+  Authentication 설정에서 가능).
