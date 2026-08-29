@@ -71,20 +71,30 @@ export default function RecordPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, audioBlob]);
 
+  const showStartScreen =
+    status === "idle" || status === "requesting" || status === "error" || !!analyzeError;
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center gap-8 px-6 py-16">
-      {status === "idle" || status === "requesting" || status === "error" ? (
+      {showStartScreen ? (
         <div className="flex flex-col items-center gap-4">
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             1~5분 사이로 발표를 리허설해보세요.
           </p>
           <button
-            onClick={start}
+            onClick={() => {
+              setAnalyzeError(null);
+              start();
+            }}
             disabled={status === "requesting"}
             className="rounded-full px-8 py-4 text-lg font-semibold text-white shadow"
             style={{ background: "var(--series-1)" }}
           >
-            {status === "requesting" ? "마이크 준비 중..." : "녹음 시작"}
+            {status === "requesting"
+              ? "마이크 준비 중..."
+              : analyzeError
+                ? "다시 녹음하기"
+                : "녹음 시작"}
           </button>
           {(error || analyzeError) && (
             <p className="text-sm" style={{ color: "var(--serious)" }}>

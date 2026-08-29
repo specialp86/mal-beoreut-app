@@ -45,10 +45,9 @@ export const googleProvider: SttProvider = {
       }
     );
     if (!res.ok) {
-      throw new Error(
-        `Google STT error ${res.status}: ${await res.text()} ` +
-          "(sync recognize supports at most ~1 minute of audio — try a shorter recording)"
-      );
+      const body = await res.text();
+      const tooLong = /too long|longer than/i.test(body);
+      throw new Error(`${tooLong ? "AUDIO_TOO_LONG: " : ""}Google STT error ${res.status}: ${body}`);
     }
     const data = await res.json();
     const results = data.results ?? [];

@@ -41,7 +41,15 @@ export async function POST(request: Request) {
       coachingTip,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "STT request failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    console.error("STT request failed:", err);
+    const tooLong = err instanceof Error && err.message.startsWith("AUDIO_TOO_LONG:");
+    return NextResponse.json(
+      {
+        error: tooLong
+          ? "녹음이 너무 길어요. 1분 이내로 다시 녹음해주세요."
+          : "음성 인식에 실패했어요. 잠시 후 다시 시도해주세요.",
+      },
+      { status: 502 }
+    );
   }
 }
