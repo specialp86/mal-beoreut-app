@@ -93,7 +93,7 @@ function ResultContent() {
 
       {recording.coachingTip && (
         <section
-          className="rounded-lg px-4 py-3 text-sm leading-relaxed"
+          className="rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
           style={{ background: "var(--series-1-soft)", color: "var(--foreground)" }}
         >
           <p className="text-xs font-semibold mb-1" style={{ color: "var(--series-1)" }}>
