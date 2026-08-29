@@ -41,6 +41,7 @@ export default function RecordPage() {
           fillerCounts: data.fillerCounts,
           totalFillerCount: data.totalFillerCount,
           sttProvider: data.sttProvider,
+          coachingTip: data.coachingTip ?? null,
         });
         router.push(`/result?id=${id}`);
       } catch (err) {

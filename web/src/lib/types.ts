@@ -8,4 +8,5 @@ export interface Recording {
   fillerCounts: FillerCounts;
   totalFillerCount: number;
   sttProvider: string;
+  coachingTip?: string | null;
 }

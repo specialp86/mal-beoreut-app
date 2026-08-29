@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { countFillerWords } from "@/lib/filler-words";
 import { getSttProvider } from "@/lib/stt";
+import { generateCoachingTip } from "@/lib/coach";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -24,11 +25,20 @@ export async function POST(request: Request) {
     });
     const { counts, total } = countFillerWords(text);
 
+    let coachingTip: string | null = null;
+    try {
+      coachingTip = await generateCoachingTip(text, counts);
+    } catch {
+      // Coaching is a nice-to-have; a failure here shouldn't fail the whole request.
+      coachingTip = null;
+    }
+
     return NextResponse.json({
       transcriptText: text,
       fillerCounts: counts,
       totalFillerCount: total,
       sttProvider: provider.name,
+      coachingTip,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "STT request failed";
