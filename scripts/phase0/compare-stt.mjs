@@ -207,7 +207,7 @@ async function transcribeWithGoogle(filePath, { encoding, sampleRate }) {
   }
   const { name: operationName } = await startRes.json();
 
-  const deadline = Date.now() + 2 * 60 * 1000;
+  const deadline = Date.now() + 8 * 60 * 1000;
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 3000));
     const pollRes = await fetch(
@@ -228,7 +228,7 @@ async function transcribeWithGoogle(filePath, { encoding, sampleRate }) {
       return { text };
     }
   }
-  throw new Error("Google STT operation timed out after 2 minutes");
+  throw new Error("Google STT operation timed out after 8 minutes");
 }
 
 // ---------- Run all three and report ----------
