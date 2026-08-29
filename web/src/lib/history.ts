@@ -43,6 +43,33 @@ export function addRecording(recording: Recording): void {
   for (const r of dropped) deleteAudio(r.id);
 }
 
+export interface StatsSummary {
+  totalRecordings: number;
+  averageFillerCount: number;
+  topWord: { word: string; count: number } | null;
+}
+
+export function getStatsSummary(): StatsSummary {
+  const all = getRecordings();
+  if (all.length === 0) {
+    return { totalRecordings: 0, averageFillerCount: 0, topWord: null };
+  }
+
+  const totalFillerCount = all.reduce((sum, r) => sum + r.totalFillerCount, 0);
+  const averageFillerCount = Math.round((totalFillerCount / all.length) * 10) / 10;
+
+  const wordTotals: Record<string, number> = {};
+  for (const r of all) {
+    for (const [word, count] of Object.entries(r.fillerCounts)) {
+      wordTotals[word] = (wordTotals[word] ?? 0) + count;
+    }
+  }
+  const topEntry = Object.entries(wordTotals).sort((a, b) => b[1] - a[1])[0];
+  const topWord = topEntry && topEntry[1] > 0 ? { word: topEntry[0], count: topEntry[1] } : null;
+
+  return { totalRecordings: all.length, averageFillerCount, topWord };
+}
+
 /** The recording immediately before `id` in time, for the comparison text. */
 export function getPreviousRecording(id: string): Recording | undefined {
   const all = getRecordings()

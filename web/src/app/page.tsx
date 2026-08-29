@@ -2,17 +2,33 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getRecordings } from "@/lib/history";
+import { getRecordings, getStatsSummary, type StatsSummary } from "@/lib/history";
 import type { Recording } from "@/lib/types";
+
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="flex-1 rounded-lg px-3 py-3 text-center"
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+    >
+      <p className="text-lg font-semibold tabular-nums">{value}</p>
+      <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </p>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [recent, setRecent] = useState<Recording[]>([]);
+  const [stats, setStats] = useState<StatsSummary | null>(null);
 
   useEffect(() => {
     // Reads from localStorage, which only exists on the client — this is
     // exactly the "external system" case set-state-in-effect exists for.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecent(getRecordings().slice(0, 5));
+    setStats(getStatsSummary());
   }, []);
 
   return (
@@ -31,6 +47,17 @@ export default function HomePage() {
       >
         녹음 시작
       </Link>
+
+      {stats && stats.totalRecordings > 0 && (
+        <section className="w-full flex gap-3">
+          <StatTile label="누적 녹음" value={`${stats.totalRecordings}회`} />
+          <StatTile label="평균 필러워드" value={`${stats.averageFillerCount}개`} />
+          <StatTile
+            label="최다 습관어"
+            value={stats.topWord ? `${stats.topWord.word}` : "-"}
+          />
+        </section>
+      )}
 
       <section className="w-full">
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
