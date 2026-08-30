@@ -1,0 +1,14 @@
+[
+  { "word": "음", "category": "감탄사" },
+  { "word": "어", "category": "감탄사" },
+  { "word": "그니까", "category": "접속어" },
+  { "word": "그러니까", "category": "접속어" },
+  { "word": "약간", "category": "군더더기어" },
+  { "word": "이제", "category": "군더더기어" },
+  { "word": "일단", "category": "군더더기어" },
+  { "word": "뭐랄까", "category": "군더더기어" },
+  { "word": "그래서", "category": "접속어" },
+  { "word": "그", "category": "감탄사" },
+  { "word": "저", "category": "감탄사" },
+  { "word": "막", "category": "군더더기어" }
+]

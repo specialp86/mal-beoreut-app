@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+
+# Raw audio must never be committed (privacy: audio is deleted after processing)
+samples/*.wav
+samples/*.mp3
+samples/*.m4a
+samples/*.flac
+!samples/README.md
+
+# Build output (added once the Next.js app is scaffolded post Phase 0)
+.next/
+out/
